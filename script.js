@@ -2,16 +2,35 @@ let currentPage = 0;
 let timer;
 let timeRemaining = 300; // 5 minutes in seconds
 let userAnswers = {};
-let questions = []; // Initialize an empty array to hold the questions
+
+const questions = [
+    { "type": "text", "content": "What is the tallest mountain in the world?", "answer": "Mount Everest" },
+    { "type": "radio", "content": "Which planet is known as the Red Planet?", "options": ["Mars", "Jupiter", "Saturn"], "answer": "Mars" },
+    { "type": "checkbox", "content": "Which of the following are programming languages?", "options": ["JavaScript", "HTML", "Python", "CSS"], "answer": ["JavaScript", "Python"] },
+    { "type": "dropdown", "content": "Select the smallest continent in the world.", "options": ["Australia", "Antarctica", "Europe"], "answer": "Australia" },
+    { "type": "radio", "content": "Is water a compound?", "options": ["Yes", "No"], "answer": "Yes" },
+    { "type": "text", "content": "Who wrote the play \"Romeo and Juliet\"?", "answer": "William Shakespeare" },
+    { "type": "radio", "content": "Which one is a fruit?", "options": ["Carrot", "Apple", "Broccoli"], "answer": "Apple" },
+    { "type": "checkbox", "content": "Which of the following are elements?", "options": ["Oxygen", "Water", "Iron", "Plastic"], "answer": ["Oxygen", "Iron"] },
+    { "type": "radio", "content": "Which of the following is not a programming language?", "options": ["Python", "HTML", "Java", "C++"], "answer": "HTML" },
+    { "type": "dropdown", "content": "Select the country with the largest population.", "options": ["USA", "India", "China"], "answer": "China" },
+    { "type": "text", "content": "What is the chemical symbol for water?", "answer": "H2O" },
+    { "type": "text", "content": "What is the capital of France?", "answer": "Paris" },
+    { "type": "checkbox", "content": "Which of the following are mammals?", "options": ["Whale", "Shark", "Dolphin", "Octopus"], "answer": ["Whale", "Dolphin"] },
+    { "type": "radio", "content": "Which color is not a primary color?", "options": ["Red", "Blue", "Green"], "answer": "Green" },
+    { "type": "text", "content": "How many continents are there?", "answer": "7" },
+    { "type": "checkbox", "content": "Which of the following are prime numbers?", "options": ["2", "3", "4", "5"], "answer": ["2", "3", "5"] },
+    { "type": "text", "content": "What is the capital of Japan?", "answer": "Tokyo" },
+    { "type": "radio", "content": "Which is the largest ocean on Earth?", "options": ["Atlantic", "Indian", "Pacific"], "answer": "Pacific" },
+    { "type": "checkbox", "content": "Which of the following are web browsers?", "options": ["Chrome", "Python", "Firefox", "Edge"], "answer": ["Chrome", "Firefox", "Edge"] },
+    { "type": "dropdown", "content": "Which element is known as the king of chemicals?", "options": ["Hydrogen", "Oxygen", "Sulfur"], "answer": "Sulfur" }
+];
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetch('question.json')
-        .then(response => response.json())
-        .then(data => {
-            questions = data;
-            document.getElementById('start-button').addEventListener('click', startQuiz);
-        })
-        .catch(error => console.error('Error loading questions:', error));
+    document.getElementById('start-button').addEventListener('click', startQuiz);
+    document.getElementById('submit-button').addEventListener('click', submitQuiz);
+    document.getElementById('next-button').addEventListener('click', nextPage);
+    document.getElementById('prev-button').addEventListener('click', prevPage);
 });
 
 function startQuiz() {
@@ -125,91 +144,72 @@ function updateNavigation() {
     const nextButton = document.getElementById('next-button');
     const prevButton = document.getElementById('prev-button');
     const submitButton = document.getElementById('submit-button');
+    const totalPages = Math.ceil(questions.length / 5);
 
-    if (currentPage === 0) {
-        nextButton.disabled = false;
-        prevButton.style.display = 'none';
-        submitButton.style.display = 'none';
-    } else {
-        prevButton.style.display = 'inline-block';
-        submitButton.style.display = 'none';
-    }
-
-    if (currentPage === Math.floor(questions.length / 5)) {
-        nextButton.style.display = 'none';
-        submitButton.style.display = 'inline-block';
-    } else {
-        nextButton.style.display = 'inline-block';
-    }
+    nextButton.style.display = currentPage < totalPages - 1 ? 'inline-block' : 'none';
+    prevButton.style.display = currentPage > 0 ? 'inline-block' : 'none';
+    submitButton.style.display = currentPage === totalPages - 1 ? 'inline-block' : 'none';
 }
 
 function nextPage() {
-    if (currentPage < Math.floor(questions.length / 5)) {
-        currentPage++;
-        displayPage();
-    }
+    currentPage++;
+    displayPage();
 }
 
 function prevPage() {
-    if (currentPage > 0) {
-        currentPage--;
-        displayPage();
-    }
+    currentPage--;
+    displayPage();
 }
 
 function saveAnswer(event) {
-    const questionIndex = parseInt(event.target.name.substr(1));
-    const answer = event.target.type === 'checkbox' ?
-        Array.from(document.querySelectorAll(`input[name=q${questionIndex}]:checked`)).map(cb => cb.value) :
+    const questionIndex = event.target.name.slice(1);
+    const answer = event.target.type === 'checkbox' ? 
+        Array.from(document.querySelectorAll(`input[name="q${questionIndex}"]:checked`)).map(input => input.value) :
         event.target.value;
 
     userAnswers[`q${questionIndex}`] = answer;
 }
 
 function submitQuiz() {
-    clearInterval(timer);
-    showResults();
-}
-
-function showResults() {
-    let correctAnswers = 0;
-    const answersContainer = document.getElementById('answers');
-    answersContainer.innerHTML = '';
-
-    questions.forEach((question, index) => {
-        const answerDiv = document.createElement('div');
-        answerDiv.className = 'result-question';
-
-        const userAnswer = userAnswers[`q${index}`];
-        const correctAnswer = question.answer;
-
-        const questionTitle = document.createElement('h3');
-        questionTitle.textContent = question.content;
-        answerDiv.appendChild(questionTitle);
-
-        const userResponse = document.createElement('p');
-        userResponse.textContent = `Your Answer: ${userAnswer}`;
-        answerDiv.appendChild(userResponse);
-
-        const correctResponse = document.createElement('p');
-        correctResponse.textContent = `Correct Answer: ${correctAnswer}`;
-        answerDiv.appendChild(correctResponse);
-
-        if (userAnswer && userAnswer.toString() === correctAnswer.toString()) {
-            answerDiv.classList.add('correct-answer');
-            correctAnswers++;
-        } else {
-            answerDiv.classList.add('incorrect-answer');
-        }
-
-        answersContainer.appendChild(answerDiv);
-    });
-
-    const scoreDisplay = document.createElement('p');
-    scoreDisplay.textContent = `Your Score: ${correctAnswers} out of ${questions.length}`;
-    answersContainer.appendChild(scoreDisplay);
-
+    clearInterval(timer);  // Stop the timer
     document.getElementById('question-container').style.display = 'none';
     document.getElementById('navigation').style.display = 'none';
     document.getElementById('results').style.display = 'block';
+
+    const resultsContainer = document.getElementById('results');
+    resultsContainer.innerHTML = '';
+
+    let score = 0;
+
+    questions.forEach((question, index) => {
+        const userAnswer = userAnswers[`q${index}`];
+        const correctAnswer = question.answer;
+        const isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer);
+
+        const resultElement = document.createElement('div');
+        resultElement.className = isCorrect ? 'correct-answer' : 'incorrect-answer';
+
+        const questionLabel = document.createElement('label');
+        questionLabel.textContent = question.content;
+        resultElement.appendChild(questionLabel);
+
+        const userAnswerLabel = document.createElement('div');
+        userAnswerLabel.textContent = `Your answer: ${userAnswer}`;
+        resultElement.appendChild(userAnswerLabel);
+
+        const correctAnswerLabel = document.createElement('div');
+        correctAnswerLabel.textContent = `Correct answer: ${correctAnswer}`;
+        resultElement.appendChild(correctAnswerLabel);
+
+        resultsContainer.appendChild(resultElement);
+
+        if (isCorrect) {
+            score++;
+        }
+    });
+
+    const scoreElement = document.createElement('div');
+    scoreElement.className = 'score';
+    scoreElement.textContent = `You scored ${score} out of ${questions.length}`;
+    resultsContainer.appendChild(scoreElement);
 }
